@@ -160,10 +160,10 @@ class OC_Connector_Sabre_Directory extends OC_Connector_Sabre_Node
 	 */
 	public function getChildren() {
 		$folder_content = $this->getDirectoryContent();
-		$properties = [];
+		$properties = array();
 		$paths = array();
 		foreach($folder_content as $info) {
-			$paths[$info->getId()] = $this->path.'/'.$info['name'];
+			$paths[] = $this->path.'/'.$info['name'];
 			$properties[$this->path.'/'.$info['name']][self::GETETAG_PROPERTYNAME] = '"' . $info['etag'] . '"';
 		}
 		// TODO: move this to a beforeGetPropertiesForPath event to pre-cache properties
@@ -173,7 +173,7 @@ class OC_Connector_Sabre_Directory extends OC_Connector_Sabre_Node
 			// the number of arguments within IN conditions are limited in most databases
 			// we chunk $paths into arrays of 200 items each to meet this criteria
 			//
-			$chunks = array_chunk(array_values($paths), 200, false);
+			$chunks = array_chunk($paths, 200, false);
 			foreach ($chunks as $pack) {
 				$placeholders = join(',', array_fill(0, count($pack), '?'));
 				$query = OC_DB::prepare( 'SELECT * FROM `*PREFIX*properties`'

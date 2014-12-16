@@ -119,4 +119,5 @@ class OC_Connector_Sabre_FilesPlugin extends \Sabre\DAV\ServerPlugin
 			}
 		}
 	}
+
 }
