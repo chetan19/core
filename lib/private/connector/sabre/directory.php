@@ -147,10 +147,6 @@ class OC_Connector_Sabre_Directory extends OC_Connector_Sabre_Node
 	 * @return \OCP\FileInfo[]
 	 */
 	public function getDirectoryContent() {
-		if (!$this->dirContent) {
-			$this->dirContent = $this->fileView->getDirectoryContent($this->path);
-		}
-		return $this->dirContent;
 	}
 
 	/**
@@ -159,10 +155,15 @@ class OC_Connector_Sabre_Directory extends OC_Connector_Sabre_Node
 	 * @return \Sabre\DAV\INode[]
 	 */
 	public function getChildren() {
-		$folder_content = $this->getDirectoryContent();
+		if (!is_null($this->dirContent)) {
+			return $this->dirContent;
+		}
+		$folderContent = $this->fileView->getDirectoryContent($this->path);
+		$this->dirContent = $folderContent;
+
 		$properties = array();
 		$paths = array();
-		foreach($folder_content as $info) {
+		foreach($folderContent as $info) {
 			$paths[] = $this->path.'/'.$info['name'];
 			$properties[$this->path.'/'.$info['name']][self::GETETAG_PROPERTYNAME] = '"' . $info['etag'] . '"';
 		}
@@ -192,7 +193,7 @@ class OC_Connector_Sabre_Directory extends OC_Connector_Sabre_Node
 		}
 
 		$nodes = array();
-		foreach($folder_content as $info) {
+		foreach($folderContent as $info) {
 			$node = $this->getChild($info->getName(), $info);
 			$node->setPropertyCache($properties[$this->path.'/'.$info['name']]);
 			$nodes[] = $node;
