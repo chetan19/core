@@ -922,6 +922,10 @@ class Preview {
 			return false;
 		}
 
+		if (!$file->getMountPoint()->getOption('previews', true)){
+			return false;
+		}
+
 		//check if there are preview backends
 		if (empty(self::$providers)) {
 			self::initProviders();
