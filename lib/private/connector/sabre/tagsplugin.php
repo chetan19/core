@@ -58,21 +58,13 @@ class TagsPlugin extends \Sabre\DAV\ServerPlugin
 	private $cachedTags;
 
 	/**
-	 * Array of file id to favorite boolean.
-	 * The null value means the cache wasn't initialized.
-	 *
-	 * @var array
-	 */
-	private $cachedFavorites;
-
-	/**
 	 * @param \OCP\ITagManager $tagManager tag manager
 	 */
-	public function __construct(\OCP\ITagManager $tagManager) {
+	public function __construct(\Sabre\DAV\ObjectTree $objectTree, \OCP\ITagManager $tagManager) {
+		$this->objectTree = $objectTree;
 		$this->tagManager = $tagManager;
 		$this->tagger = null;
 		$this->cachedTags = null;
-		$this->cachedFavorites = null;
 	}
 
 	/**
@@ -93,6 +85,7 @@ class TagsPlugin extends \Sabre\DAV\ServerPlugin
 
 		$this->server = $server;
 		$this->server->subscribeEvent('beforeGetProperties', array($this, 'beforeGetProperties'));
+		$this->server->subscribeEvent('beforeGetPropertiesForPath', array($this, 'beforeGetPropertiesForPath'));
 		$this->server->subscribeEvent('updateProperties', array($this, 'updateProperties'));
 	}
 
@@ -131,11 +124,10 @@ class TagsPlugin extends \Sabre\DAV\ServerPlugin
 	 * @return array list($tags, $favorite) with $tags as tag array
 	 * and $favorite is a boolean whether the file was favorited
 	 */
-	private function getTagsAndFav($fileId) {
+	private function getTagsAndFav(int $fileId) {
 		$isFav = false;
-		$tags = $this->getTagger()->getTagsForObjects(array($fileId));
+		$tags = $this->getTags($fileId);
 		if ($tags) {
-			$tags = current($tags);
 			$favPos = array_search(self::TAG_FAVORITE, $tags);
 			if ($favPos !== false) {
 				$isFav = true;
@@ -146,6 +138,24 @@ class TagsPlugin extends \Sabre\DAV\ServerPlugin
 	}
 
 	/**
+	 * Returns tags for the given file id
+	 *
+	 * @param int $fileId file id
+	 * @return array list of tags for that file
+	 */
+	private function getTags(int $fileId) {
+		if (isset($this->cachedTags[$fileId])) {
+			return $this->cachedTags[$fileId];
+		} else {
+			$tags = $this->getTagger()->getTagsForObjects(array($fileId));
+			if ($tags) {
+				return current($tags);
+			}
+		}
+		return null;
+	}
+
+	/**
 	 * Updates the tags of the given file id
 	 *
 	 * @param int $fileId
@@ -153,8 +163,7 @@ class TagsPlugin extends \Sabre\DAV\ServerPlugin
 	 */
 	private function updateTags($fileId, $tags) {
 		$tagger = $this->getTagger();
-		$currentTags = $tagger->getTagsForObjects(array($fileId));
-
+		$currentTags = $tagger->getTags($fileId);
 		if (!empty($currentTags)) {
 			$currentTags = current($currentTags);
 		}
@@ -172,6 +181,46 @@ class TagsPlugin extends \Sabre\DAV\ServerPlugin
 				continue;
 			}
 			$tagger->unTag($fileId, $tag);
+		}
+	}
+
+	/**
+	 * Pre-fetch tags info
+	 *
+	 * @param string $path
+	 * @param array $requestedProperties
+	 * @param int $depth
+	 * @return void
+	 */
+	public function beforeGetPropertiesForPath(
+		$path,
+		array $requestedProperties,
+		int $depth
+	) {
+		$node = $this->objectTree->getNodeForPath($path);
+		if (!($node instanceof \OC_Connector_Sabre_Directory)) {
+			return;
+		}
+
+		if ($this->findAndRemoveProperty($requestedProperties, self::TAGS_PROPERTYNAME)) {
+			$needTags = true;
+		}
+		if ($this->findAndRemoveProperty($requestedProperties, self::FAVORITE_PROPERTYNAME)) {
+			$needFav = true;
+		}
+
+		if ($needTags || $needFav) {
+			$fileIds = array();
+			$folderContent = $node->getChildren();
+			// TODO: refactor somehow with the similar array that is created
+			// in getChildren()
+			foreach ($folderContent as $info) {
+				$fileIds[] = $info->getId();
+			}
+			$tags = $this->getTagger()->getTagsForObjects($fileIds);
+			if ($tags) {
+				$this->cachedTags = $tags;
+			}
 		}
 	}
 
@@ -199,7 +248,7 @@ class TagsPlugin extends \Sabre\DAV\ServerPlugin
 		$isFav = null;
 		if ($this->findAndRemoveProperty($requestedProperties, self::TAGS_PROPERTYNAME)) {
 			list($tags, $isFav) = $this->getTagsAndFav($node->getId());
-			$returnedProperties[200][self::TAGS_PROPERTYNAME] = $tags = new TagList($tags);
+			$returnedProperties[200][self::TAGS_PROPERTYNAME] = new TagList($tags);
 		}
 		if ($this->findAndRemoveProperty($requestedProperties, self::FAVORITE_PROPERTYNAME)) {
 			if (is_null($tags)) {

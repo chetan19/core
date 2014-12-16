@@ -160,11 +160,14 @@ class OC_Connector_Sabre_Directory extends OC_Connector_Sabre_Node
 	 */
 	public function getChildren() {
 		$folder_content = $this->getDirectoryContent();
+		$properties = [];
 		$paths = array();
 		foreach($folder_content as $info) {
 			$paths[$info->getId()] = $this->path.'/'.$info['name'];
 			$properties[$this->path.'/'.$info['name']][self::GETETAG_PROPERTYNAME] = '"' . $info['etag'] . '"';
 		}
+		// TODO: move this to a beforeGetPropertiesForPath event to pre-cache properties
+		// TODO: only fetch the requested properties
 		if(count($paths)>0) {
 			//
 			// the number of arguments within IN conditions are limited in most databases
