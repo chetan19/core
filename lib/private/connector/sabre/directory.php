@@ -27,6 +27,13 @@ class OC_Connector_Sabre_Directory extends OC_Connector_Sabre_Node
 	implements \Sabre\DAV\ICollection, \Sabre\DAV\IQuota {
 
 	/**
+	 * Cached directory content
+	 *
+	 * @var \OCP\FileInfo[]
+	 */
+	private $dirContent;
+
+	/**
 	 * Creates a new file in the directory
 	 *
 	 * Data will either be supplied as a stream resource, or in certain cases
@@ -135,13 +142,24 @@ class OC_Connector_Sabre_Directory extends OC_Connector_Sabre_Node
 	}
 
 	/**
+	 * Return the directory content as fileinfo objects
+	 *
+	 * @return \OCP\FileInfo[]
+	 */
+	public function getDirectoryContent() {
+		if (!$this->dirContent) {
+			$this->dirContent = $this->fileView->getDirectoryContent($this->path);
+		}
+		return $this->dirContent;
+	}
+
+	/**
 	 * Returns an array with all the child nodes
 	 *
 	 * @return \Sabre\DAV\INode[]
 	 */
 	public function getChildren() {
-
-		$folder_content = $this->fileView->getDirectoryContent($this->path);
+		$folder_content = $this->getDirectoryContent();
 		$paths = array();
 		foreach($folder_content as $info) {
 			$paths[$info->getId()] = $this->path.'/'.$info['name'];
@@ -166,16 +184,6 @@ class OC_Connector_Sabre_Directory extends OC_Connector_Sabre_Node
 					if($propertyname !== self::GETETAG_PROPERTYNAME) {
 						$properties[$propertypath][$propertyname] = $propertyvalue;
 					}
-				}
-			}
-			// also retrieve tags
-			// TODO: inject this somehow if possible...
-			$tagger = \OC::$server->getTagManager()->load('files');
-			// TODO: find a way to avoid this call if the property wasn't requested
-			$tags = $tagger->getTagsForObjects(array_keys($paths));
-			if (count($tags) > 0) {
-				foreach ($tags as $fileId => $fileTags) {
-					$properties[$paths[$fileId]][self::TAGS_PROPERTYNAME] = new TagList($fileTags);
 				}
 			}
 		}
