@@ -62,6 +62,7 @@ interface IAppContainer extends IContainer {
 	function isLoggedIn();
 
 	/**
+	 * @deprecated use IGroupManager->isAdmin($userId)
 	 * @return boolean
 	 */
 	function isAdminUser();

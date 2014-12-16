@@ -195,6 +195,7 @@ class DIContainer extends SimpleContainer implements IAppContainer{
 	}
 
 	/**
+	 * @deprecated use IGroupManager->isAdmin($userId)
 	 * @return boolean
 	 */
 	function isAdminUser() {
