@@ -19,6 +19,15 @@ echo "Docker executable found - stop and remove docker containers"
 # retrieve current folder to remove the config from the parent folder
 thisFolder=`echo $0 | replace "env/stopOwnCloud.webdav.sh" ""`
 
+echo "DEBUG"
+
+netstat -tlpen
+
+echo "CONFIG:"
+
+cat $thisFolder/config.webdav.php
+cat $thisFolder/dockerContainerOwnCloud.$EXECUTOR_NUMBER.webdav
+
 # stopping and removing docker containers
 for container in `cat $thisFolder/dockerContainerOwnCloud.$EXECUTOR_NUMBER.webdav`; do
     echo "Stopping and removing docker container $container"
