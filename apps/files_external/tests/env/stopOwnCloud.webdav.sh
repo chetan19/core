@@ -20,7 +20,7 @@ echo "Docker executable found - stop and remove docker containers"
 thisFolder=`echo $0 | replace "env/stopOwnCloud.webdav.sh" ""`
 
 # stopping and removing docker containers
-for container in `cat $thisFolder/dockerContainerOwnCloud.webdav`; do
+for container in `cat $thisFolder/dockerContainerOwnCloud.$EXECUTOR_NUMBER.webdav`; do
     echo "Stopping and removing docker container $container"
     # kills running container and removes it
     docker rm -f $container
@@ -28,5 +28,5 @@ done;
 
 # cleanup
 rm $thisFolder/config.webdav.php
-rm $thisFolder/dockerContainerOwnCloud.webdav
+rm $thisFolder/dockerContainerOwnCloud.$EXECUTOR_NUMBER.webdav
 

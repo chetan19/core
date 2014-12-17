@@ -64,11 +64,11 @@ DELIM
 echo "ownCloud container: $container"
 
 # put container IDs into a file to drop them after the test run (keep in mind that multiple tests run in parallel on the same host)
-echo $container >> $thisFolder/dockerContainerOwnCloud.webdav
+echo $container >> $thisFolder/dockerContainerOwnCloud.$EXECUTOR_NUMBER.webdav
 
 if [ -n "$databaseContainer" ]; then
     echo "Database container: $databaseContainer"
-    echo $databaseContainer >> $thisFolder/dockerContainerOwnCloud.webdav
+    echo $databaseContainer >> $thisFolder/dockerContainerOwnCloud.$EXECUTOR_NUMBER.webdav
 fi
 
 if [ -n "$DEBUG" ]; then
